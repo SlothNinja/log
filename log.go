@@ -3,49 +3,89 @@ package log
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"strings"
 )
 
+const (
+	logLevel = "LOGLEVEL"
+
+	LvlNone    = "NONE"
+	LvlDebug   = "DEBUG"
+	LvlInfo    = "INFO"
+	LvlWarning = "WARNING"
+	LvlError   = "ERROR"
+
+	debugLabel   = "[DEBUG]"
+	infoLabel    = "[INFO]"
+	warningLabel = "[WARNING]"
+	errorLabel   = "[ERROR]"
+)
+
+var DefaultLevel = LvlDebug
+
+func showLogFor(label string) bool {
+	switch getLevel() {
+	case LvlNone:
+		return false
+	case LvlDebug:
+		return (label == debugLabel) || (label == infoLabel) || (label == warningLabel) || (label == errorLabel)
+	case LvlInfo:
+		return (label == infoLabel) || (label == warningLabel) || (label == errorLabel)
+	case LvlWarning:
+		return (label == warningLabel) || (label == errorLabel)
+	case LvlError:
+		return (label == errorLabel)
+	default:
+		return true
+	}
+}
+
+func getLevel() string {
+	v, found := os.LookupEnv(logLevel)
+	if !found {
+		return DefaultLevel
+	}
+	switch v {
+	case LvlNone:
+		return LvlNone
+	case LvlDebug:
+		return LvlDebug
+	case LvlInfo:
+		return LvlInfo
+	case LvlWarning:
+		return LvlWarning
+	case LvlError:
+		return LvlError
+	default:
+		return DefaultLevel
+	}
+}
+
 func Debugf(tmpl string, args ...interface{}) {
-	log.Printf("[DEBUG] "+caller()+tmpl, args...)
+	if showLogFor(debugLabel) {
+		log.Printf(debugLabel+" "+caller()+tmpl, args...)
+	}
 }
-
-// func Debugf(ctx context.Context, tmpl string, args ...interface{}) {
-// 	// l(ctx).Debugf(caller()+tmpl, args...)
-// 	log.Printf("[DEBUG] "+caller()+tmpl, args...)
-// }
-
-func Errorf(tmpl string, args ...interface{}) {
-	log.Printf("[ERROR] "+caller()+tmpl, args...)
-}
-
-// func Errorf(ctx context.Context, tmpl string, args ...interface{}) {
-// 	// l(ctx).Errorf(caller()+tmpl, args...)
-// 	log.Printf("[ERROR] "+caller()+tmpl, args...)
-// }
 
 func Infof(tmpl string, args ...interface{}) {
-	log.Printf("[INFO] "+caller()+tmpl, args...)
+	if showLogFor(infoLabel) {
+		log.Printf(infoLabel+" "+caller()+tmpl, args...)
+	}
 }
-
-// func Infof(ctx context.Context, tmpl string, args ...interface{}) {
-// 	// l(ctx).Infof(caller()+tmpl, args...)
-// 	log.Printf("[INFO] "+caller()+tmpl, args...)
-// }
 
 func Warningf(tmpl string, args ...interface{}) {
-	log.Printf("[WARNING] "+caller()+tmpl, args...)
+	if showLogFor(warningLabel) {
+		log.Printf(warningLabel+" "+caller()+tmpl, args...)
+	}
 }
 
-// func Warningf(ctx context.Context, tmpl string, args ...interface{}) {
-// 	// l(ctx).Warningf(caller()+tmpl, args...)
-// 	log.Printf("[WARNING] "+caller()+tmpl, args...)
-// }
-
-// func l(ctx context.Context) logging.Logger {
-// 	return logging.Get(ctx)
-// }
+func Errorf(tmpl string, args ...interface{}) {
+	if showLogFor(errorLabel) {
+		log.Printf(errorLabel+" "+caller()+tmpl, args...)
+	}
+}
 
 func caller() string {
 	pc, file, line, _ := runtime.Caller(2)
