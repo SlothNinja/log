@@ -1,11 +1,15 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"runtime"
 	"strings"
+
+	"cloud.google.com/go/logging"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -21,6 +25,9 @@ const (
 	infoLabel    = "[INFO]"
 	warningLabel = "[WARNING]"
 	errorLabel   = "[ERROR]"
+
+	nodeEnv    = "NODE_ENV"
+	production = "production"
 )
 
 var DefaultLevel = LvlDebug
@@ -64,27 +71,31 @@ func getLevel() string {
 }
 
 func Debugf(tmpl string, args ...interface{}) {
-	if showLogFor(debugLabel) {
-		log.Printf(debugLabel+" "+caller()+tmpl, args...)
+	if !showLogFor(debugLabel) {
+		return
 	}
+	log.Printf(debugLabel+" "+caller()+tmpl, args...)
 }
 
 func Infof(tmpl string, args ...interface{}) {
-	if showLogFor(infoLabel) {
-		log.Printf(infoLabel+" "+caller()+tmpl, args...)
+	if !showLogFor(infoLabel) {
+		return
 	}
+	log.Printf(infoLabel+" "+caller()+tmpl, args...)
 }
 
 func Warningf(tmpl string, args ...interface{}) {
-	if showLogFor(warningLabel) {
-		log.Printf(warningLabel+" "+caller()+tmpl, args...)
+	if !showLogFor(warningLabel) {
+		return
 	}
+	log.Printf(warningLabel+" "+caller()+tmpl, args...)
 }
 
 func Errorf(tmpl string, args ...interface{}) {
-	if showLogFor(errorLabel) {
-		log.Printf(errorLabel+" "+caller()+tmpl, args...)
+	if !showLogFor(errorLabel) {
+		return
 	}
+	log.Printf(errorLabel+" "+caller()+tmpl, args...)
 }
 
 func caller() string {
@@ -103,4 +114,111 @@ func caller() string {
 
 func Printf(fmt string, args ...interface{}) {
 	log.Printf(caller()+fmt, args...)
+}
+
+func Panicf(fmt string, args ...interface{}) {
+	log.Panicf(fmt, args...)
+}
+
+func NewClient(parent string, opts ...option.ClientOption) (*Client, error) {
+	if !isProduction() {
+		return new(Client), nil
+	}
+	cl, err := logging.NewClient(context.Background(), parent, opts...)
+	return &Client{cl}, err
+}
+
+type Client struct {
+	*logging.Client
+}
+
+type Logger struct {
+	logID string
+	*logging.Logger
+}
+
+func (cl *Client) Logger(logID string, opts ...logging.LoggerOption) *Logger {
+	if !isProduction() {
+		return new(Logger)
+	}
+	return &Logger{logID: logID, Logger: cl.Client.Logger(logID, opts...)}
+}
+
+func (l *Logger) Debugf(tmpl string, args ...interface{}) {
+	if !isProduction() {
+		Debugf(tmpl, args...)
+		return
+	}
+
+	if !showLogFor(debugLabel) {
+		return
+	}
+
+	if l.Logger == nil {
+		Warningf("missing logger")
+	}
+
+	l.StandardLogger(logging.Debug).Printf(debugLabel+" "+caller()+tmpl, args...)
+}
+
+func (l *Logger) StandardLogger(s logging.Severity) *log.Logger {
+	return l.Logger.StandardLogger(s)
+}
+
+func (l *Logger) Infof(tmpl string, args ...interface{}) {
+	if !isProduction() {
+		Infof(tmpl, args...)
+		return
+	}
+
+	if !showLogFor(infoLabel) {
+		return
+	}
+
+	if l.Logger == nil {
+		Warningf("missing logger")
+	}
+
+	l.StandardLogger(logging.Info).Printf(debugLabel+" "+caller()+tmpl, args...)
+}
+
+func (l *Logger) Warningf(tmpl string, args ...interface{}) {
+	if !isProduction() {
+		Warningf(tmpl, args...)
+		return
+	}
+
+	if !showLogFor(infoLabel) {
+		return
+	}
+
+	if l.Logger == nil {
+		Warningf("missing logger")
+	}
+
+	l.StandardLogger(logging.Warning).Printf(debugLabel+" "+caller()+tmpl, args...)
+}
+
+func (l *Logger) Errorf(tmpl string, args ...interface{}) {
+	if !isProduction() {
+		Errorf(tmpl, args...)
+		return
+	}
+
+	if !showLogFor(infoLabel) {
+		return
+	}
+
+	if l.Logger == nil {
+		Warningf("missing logger")
+	}
+
+	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller()+tmpl, args...)
+}
+
+// IsProduction returns true if NODE_ENV environment variable is equal to "production".
+// GAE sets NODE_ENV environement to "production" on deployment.
+// NODE_ENV can be overridden in app.yaml configuration.
+func isProduction() bool {
+	return os.Getenv(nodeEnv) == production
 }
