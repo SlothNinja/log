@@ -162,6 +162,9 @@ func (l *Logger) Debugf(tmpl string, args ...interface{}) {
 }
 
 func (l *Logger) StandardLogger(s logging.Severity) *log.Logger {
+	if !isProduction() {
+		return log.New(os.Stdout, "", 0)
+	}
 	return l.Logger.StandardLogger(s)
 }
 
