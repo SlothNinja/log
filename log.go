@@ -71,6 +71,10 @@ func getLevel() string {
 }
 
 func Debugf(tmpl string, args ...interface{}) {
+	debugf(tmpl, args...)
+}
+
+func debugf(tmpl string, args ...interface{}) {
 	if !showLogFor(debugLabel) {
 		return
 	}
@@ -78,6 +82,10 @@ func Debugf(tmpl string, args ...interface{}) {
 }
 
 func Infof(tmpl string, args ...interface{}) {
+	infof(tmpl, args...)
+}
+
+func infof(tmpl string, args ...interface{}) {
 	if !showLogFor(infoLabel) {
 		return
 	}
@@ -85,6 +93,10 @@ func Infof(tmpl string, args ...interface{}) {
 }
 
 func Warningf(tmpl string, args ...interface{}) {
+	warningf(tmpl, args...)
+}
+
+func warningf(tmpl string, args ...interface{}) {
 	if !showLogFor(warningLabel) {
 		return
 	}
@@ -92,6 +104,10 @@ func Warningf(tmpl string, args ...interface{}) {
 }
 
 func Errorf(tmpl string, args ...interface{}) {
+	errorf(tmpl, args...)
+}
+
+func errorf(tmpl string, args ...interface{}) {
 	if !showLogFor(errorLabel) {
 		return
 	}
@@ -99,7 +115,7 @@ func Errorf(tmpl string, args ...interface{}) {
 }
 
 func caller() string {
-	pc, file, line, _ := runtime.Caller(2)
+	pc, file, line, _ := runtime.Caller(3)
 	files := strings.Split(file, "/")
 	if lenFiles := len(files); lenFiles > 1 {
 		file = files[lenFiles-1]
@@ -146,7 +162,7 @@ func (cl *Client) Logger(logID string, opts ...logging.LoggerOption) *Logger {
 
 func (l *Logger) Debugf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		Debugf(tmpl, args...)
+		debugf(tmpl, args...)
 		return
 	}
 
@@ -162,7 +178,7 @@ func (l *Logger) Debugf(tmpl string, args ...interface{}) {
 }
 
 func (l *Logger) StandardLogger(s logging.Severity) *log.Logger {
-	if !isProduction() {
+	if !isProduction() || l == nil {
 		return log.New(os.Stdout, "", 0)
 	}
 	return l.Logger.StandardLogger(s)
@@ -170,7 +186,7 @@ func (l *Logger) StandardLogger(s logging.Severity) *log.Logger {
 
 func (l *Logger) Infof(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		Infof(tmpl, args...)
+		infof(tmpl, args...)
 		return
 	}
 
@@ -179,7 +195,9 @@ func (l *Logger) Infof(tmpl string, args ...interface{}) {
 	}
 
 	if l.Logger == nil {
-		Warningf("missing logger")
+		warningf("missing logger")
+		infof(tmpl, args...)
+		return
 	}
 
 	l.StandardLogger(logging.Info).Printf(debugLabel+" "+caller()+tmpl, args...)
@@ -187,7 +205,7 @@ func (l *Logger) Infof(tmpl string, args ...interface{}) {
 
 func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		Warningf(tmpl, args...)
+		warningf(tmpl, args...)
 		return
 	}
 
@@ -196,7 +214,9 @@ func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 	}
 
 	if l.Logger == nil {
-		Warningf("missing logger")
+		warningf("missing logger")
+		warningf(tmpl, args...)
+		return
 	}
 
 	l.StandardLogger(logging.Warning).Printf(debugLabel+" "+caller()+tmpl, args...)
@@ -204,7 +224,7 @@ func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 
 func (l *Logger) Errorf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		Errorf(tmpl, args...)
+		errorf(tmpl, args...)
 		return
 	}
 
@@ -213,7 +233,24 @@ func (l *Logger) Errorf(tmpl string, args ...interface{}) {
 	}
 
 	if l.Logger == nil {
-		Warningf("missing logger")
+		warningf("missing logger")
+		errorf(tmpl, args...)
+		return
+	}
+
+	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller()+tmpl, args...)
+}
+
+func (l *Logger) Panicf(tmpl string, args ...interface{}) {
+	if !isProduction() {
+		log.Panicf(tmpl, args...)
+		return
+	}
+
+	if l.Logger == nil {
+		warningf("missing logger")
+		log.Panicf(tmpl, args...)
+		return
 	}
 
 	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller()+tmpl, args...)
