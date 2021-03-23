@@ -78,7 +78,7 @@ func debugf(tmpl string, args ...interface{}) {
 	if !showLogFor(debugLabel) {
 		return
 	}
-	log.Printf(debugLabel+" "+caller()+tmpl, args...)
+	log.Printf(debugLabel+" "+caller(2)+tmpl, args...)
 }
 
 func Infof(tmpl string, args ...interface{}) {
@@ -89,7 +89,7 @@ func infof(tmpl string, args ...interface{}) {
 	if !showLogFor(infoLabel) {
 		return
 	}
-	log.Printf(infoLabel+" "+caller()+tmpl, args...)
+	log.Printf(infoLabel+" "+caller(2)+tmpl, args...)
 }
 
 func Warningf(tmpl string, args ...interface{}) {
@@ -100,7 +100,7 @@ func warningf(tmpl string, args ...interface{}) {
 	if !showLogFor(warningLabel) {
 		return
 	}
-	log.Printf(warningLabel+" "+caller()+tmpl, args...)
+	log.Printf(warningLabel+" "+caller(2)+tmpl, args...)
 }
 
 func Errorf(tmpl string, args ...interface{}) {
@@ -111,11 +111,11 @@ func errorf(tmpl string, args ...interface{}) {
 	if !showLogFor(errorLabel) {
 		return
 	}
-	log.Printf(errorLabel+" "+caller()+tmpl, args...)
+	log.Printf(errorLabel+" "+caller(2)+tmpl, args...)
 }
 
-func caller() string {
-	pc, file, line, _ := runtime.Caller(3)
+func caller(skip int) string {
+	pc, file, line, _ := runtime.Caller(skip)
 	files := strings.Split(file, "/")
 	if lenFiles := len(files); lenFiles > 1 {
 		file = files[lenFiles-1]
@@ -129,7 +129,7 @@ func caller() string {
 }
 
 func Printf(fmt string, args ...interface{}) {
-	log.Printf(caller()+fmt, args...)
+	log.Printf(caller(3)+fmt, args...)
 }
 
 func Panicf(fmt string, args ...interface{}) {
@@ -174,7 +174,7 @@ func (l *Logger) Debugf(tmpl string, args ...interface{}) {
 		Warningf("missing logger")
 	}
 
-	l.StandardLogger(logging.Debug).Printf(debugLabel+" "+caller()+tmpl, args...)
+	l.StandardLogger(logging.Debug).Printf(debugLabel+" "+caller(3)+tmpl, args...)
 }
 
 func (l *Logger) StandardLogger(s logging.Severity) *log.Logger {
@@ -200,7 +200,7 @@ func (l *Logger) Infof(tmpl string, args ...interface{}) {
 		return
 	}
 
-	l.StandardLogger(logging.Info).Printf(debugLabel+" "+caller()+tmpl, args...)
+	l.StandardLogger(logging.Info).Printf(debugLabel+" "+caller(3)+tmpl, args...)
 }
 
 func (l *Logger) Warningf(tmpl string, args ...interface{}) {
@@ -219,7 +219,7 @@ func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 		return
 	}
 
-	l.StandardLogger(logging.Warning).Printf(debugLabel+" "+caller()+tmpl, args...)
+	l.StandardLogger(logging.Warning).Printf(debugLabel+" "+caller(3)+tmpl, args...)
 }
 
 func (l *Logger) Errorf(tmpl string, args ...interface{}) {
@@ -238,7 +238,7 @@ func (l *Logger) Errorf(tmpl string, args ...interface{}) {
 		return
 	}
 
-	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller()+tmpl, args...)
+	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller(3)+tmpl, args...)
 }
 
 func (l *Logger) Panicf(tmpl string, args ...interface{}) {
@@ -253,7 +253,7 @@ func (l *Logger) Panicf(tmpl string, args ...interface{}) {
 		return
 	}
 
-	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller()+tmpl, args...)
+	l.StandardLogger(logging.Error).Printf(debugLabel+" "+caller(3)+tmpl, args...)
 }
 
 // IsProduction returns true if NODE_ENV environment variable is equal to "production".
