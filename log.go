@@ -25,6 +25,7 @@ const (
 	infoLabel    = "[INFO]"
 	warningLabel = "[WARNING]"
 	errorLabel   = "[ERROR]"
+	panicLabel   = "[PANIC]"
 
 	nodeEnv    = "NODE_ENV"
 	production = "production"
@@ -71,47 +72,55 @@ func getLevel() string {
 }
 
 func Debugf(tmpl string, args ...interface{}) {
-	debugf(tmpl, args...)
+	debugf(3, tmpl, args...)
 }
 
-func debugf(tmpl string, args ...interface{}) {
+func debugf(skip int, tmpl string, args ...interface{}) {
 	if !showLogFor(debugLabel) {
 		return
 	}
-	log.Printf(debugLabel+" "+caller(2)+tmpl, args...)
+	log.Printf(debugLabel+" "+caller(skip)+tmpl, args...)
 }
 
 func Infof(tmpl string, args ...interface{}) {
-	infof(tmpl, args...)
+	infof(3, tmpl, args...)
 }
 
-func infof(tmpl string, args ...interface{}) {
+func infof(skip int, tmpl string, args ...interface{}) {
 	if !showLogFor(infoLabel) {
 		return
 	}
-	log.Printf(infoLabel+" "+caller(2)+tmpl, args...)
+	log.Printf(infoLabel+" "+caller(skip)+tmpl, args...)
 }
 
 func Warningf(tmpl string, args ...interface{}) {
-	warningf(tmpl, args...)
+	warningf(3, tmpl, args...)
 }
 
-func warningf(tmpl string, args ...interface{}) {
+func warningf(skip int, tmpl string, args ...interface{}) {
 	if !showLogFor(warningLabel) {
 		return
 	}
-	log.Printf(warningLabel+" "+caller(2)+tmpl, args...)
+	log.Printf(warningLabel+" "+caller(skip)+tmpl, args...)
 }
 
 func Errorf(tmpl string, args ...interface{}) {
-	errorf(tmpl, args...)
+	errorf(3, tmpl, args...)
 }
 
-func errorf(tmpl string, args ...interface{}) {
+func errorf(skip int, tmpl string, args ...interface{}) {
 	if !showLogFor(errorLabel) {
 		return
 	}
-	log.Printf(errorLabel+" "+caller(2)+tmpl, args...)
+	log.Printf(errorLabel+" "+caller(skip)+tmpl, args...)
+}
+
+func Panicf(fmt string, args ...interface{}) {
+	panicf(3, fmt, args...)
+}
+
+func panicf(skip int, tmpl string, args ...interface{}) {
+	log.Printf(panicLabel+" "+caller(skip)+tmpl, args...)
 }
 
 func caller(skip int) string {
@@ -130,10 +139,6 @@ func caller(skip int) string {
 
 func Printf(fmt string, args ...interface{}) {
 	log.Printf(caller(3)+fmt, args...)
-}
-
-func Panicf(fmt string, args ...interface{}) {
-	log.Panicf(fmt, args...)
 }
 
 func NewClient(parent string, opts ...option.ClientOption) (*Client, error) {
@@ -162,7 +167,7 @@ func (cl *Client) Logger(logID string, opts ...logging.LoggerOption) *Logger {
 
 func (l *Logger) Debugf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		debugf(tmpl, args...)
+		debugf(3, tmpl, args...)
 		return
 	}
 
@@ -186,7 +191,7 @@ func (l *Logger) StandardLogger(s logging.Severity) *log.Logger {
 
 func (l *Logger) Infof(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		infof(tmpl, args...)
+		infof(3, tmpl, args...)
 		return
 	}
 
@@ -195,8 +200,8 @@ func (l *Logger) Infof(tmpl string, args ...interface{}) {
 	}
 
 	if l.Logger == nil {
-		warningf("missing logger")
-		infof(tmpl, args...)
+		warningf(3, "missing logger")
+		infof(3, tmpl, args...)
 		return
 	}
 
@@ -205,7 +210,7 @@ func (l *Logger) Infof(tmpl string, args ...interface{}) {
 
 func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		warningf(tmpl, args...)
+		warningf(3, tmpl, args...)
 		return
 	}
 
@@ -214,8 +219,8 @@ func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 	}
 
 	if l.Logger == nil {
-		warningf("missing logger")
-		warningf(tmpl, args...)
+		warningf(3, "missing logger")
+		warningf(3, tmpl, args...)
 		return
 	}
 
@@ -224,7 +229,7 @@ func (l *Logger) Warningf(tmpl string, args ...interface{}) {
 
 func (l *Logger) Errorf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		errorf(tmpl, args...)
+		errorf(3, tmpl, args...)
 		return
 	}
 
@@ -233,8 +238,8 @@ func (l *Logger) Errorf(tmpl string, args ...interface{}) {
 	}
 
 	if l.Logger == nil {
-		warningf("missing logger")
-		errorf(tmpl, args...)
+		warningf(3, "missing logger")
+		errorf(3, tmpl, args...)
 		return
 	}
 
@@ -243,13 +248,13 @@ func (l *Logger) Errorf(tmpl string, args ...interface{}) {
 
 func (l *Logger) Panicf(tmpl string, args ...interface{}) {
 	if !isProduction() {
-		log.Panicf(tmpl, args...)
+		panicf(3, tmpl, args...)
 		return
 	}
 
 	if l.Logger == nil {
-		warningf("missing logger")
-		log.Panicf(tmpl, args...)
+		warningf(3, "missing logger")
+		panicf(3, tmpl, args...)
 		return
 	}
 
