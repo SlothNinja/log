@@ -153,6 +153,10 @@ type Client struct {
 	*logging.Client
 }
 
+func (cl *Client) Close() error {
+	return cl.Client.Close()
+}
+
 type Logger struct {
 	logID string
 	*logging.Logger
